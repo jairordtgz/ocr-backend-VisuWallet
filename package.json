@@ -1,6 +1,10 @@
 {
   "name": "ocr-backend-visuwallet",
   "version": "1.0.0",
+  "main": "api/ocr.js",
+  "scripts": {
+    "start": "node api/ocr.js"
+  },
   "dependencies": {
     "axios": "latest"
   }
