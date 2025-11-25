@@ -1,0 +1,7 @@
+{
+  "name": "ocr-backend-visuwallet",
+  "version": "1.0.0",
+  "dependencies": {
+    "axios": "latest"
+  }
+}
