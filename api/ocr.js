@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Server misconfiguration" });
     }
 
-    // 🔥 1. CAMBIO CLAVE AQUÍ → DOCUMENT_TEXT_DETECTION
+    
     const response = await axios.post(
       `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_CLOUD_VISION_API_KEY}`,
       {
@@ -34,22 +34,29 @@ export default async function handler(req, res) {
           {
             image: { content: imageBase64 },
             features: [
-              { type: "DOCUMENT_TEXT_DETECTION" }  //  <-- CAMBIADO AQUÍ
+              { type: "DOCUMENT_TEXT_DETECTION" },
+              { type: "LABEL_DETECTION", maxResults: 5}
             ],
           },
         ],
       }
     );
 
+    const resData = response.data.responses[0];
+
     const text =
       response.data.responses[0]?.fullTextAnnotation?.text ||
       response.data.responses[0]?.textAnnotations?.[0]?.description ||
       "";
 
-    // 💰 Extraer monto
+
+    const labels =
+      (resData?.labelAnnotations || []).map((l) => l.description).slice(0, 5);
+
+    
     const amountMatch = text.match(/\$?\s*(\d+[.,]\d{2}|\d+)/);
 
-    // 📅 Extraer fecha (mejorado)
+    
     const dateMatch = text.match(
       /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\b/
     );
@@ -58,6 +65,7 @@ export default async function handler(req, res) {
       rawText: text,
       amount: amountMatch ? amountMatch[1].replace(",", ".") : "",
       date: dateMatch ? dateMatch[1] : "",
+      labels
     });
   } catch (err) {
     console.error("OCR Error:", err.response?.data || err.message);
