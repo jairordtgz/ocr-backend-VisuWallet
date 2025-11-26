@@ -1,3 +1,4 @@
+/*
 import axios from "axios";
 
 export default async function handler(req, res) {
@@ -39,4 +40,9 @@ export default async function handler(req, res) {
       .status(500)
       .json({ error: "OCR failed", details: err.message });
   }
+}
+*/
+
+export default function handler(req, res) {
+  return res.status(200).json({ message: "OCR endpoint working" });
 }
