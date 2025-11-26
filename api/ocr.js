@@ -1,18 +1,29 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};
+
 import axios from "axios";
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(200).json({ message: "OCR endpoint working" });
+  }
+
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Método no permitido" });
-    }
+    console.log("Body recibido:", req.body);
 
-    // Intentamos leer el body como JSON
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-
-    const { imageBase64 } = body;
-
+    const { imageBase64 } = req.body;
     if (!imageBase64) {
       return res.status(400).json({ error: "No image provided" });
+    }
+
+    if (!process.env.GOOGLE_CLOUD_VISION_API_KEY) {
+      console.error("Falta GOOGLE_CLOUD_VISION_API_KEY");
+      return res.status(500).json({ error: "Server misconfiguration" });
     }
 
     const response = await axios.post(
@@ -35,14 +46,10 @@ export default async function handler(req, res) {
     return res.status(200).json({
       rawText: text,
       amount: amountMatch ? amountMatch[1].replace(",", ".") : "",
-      date: dateMatch ? dateMatch[1] : new Date().toString(),
+      date: dateMatch ? dateMatch[1] : new Date().toISOString(),
     });
-
-  } catch (error) {
-    console.error("OCR Server Error:", error);
-    return res.status(500).json({
-      error: "OCR failed",
-      details: String(error),
-    });
+  } catch (err) {
+    console.error("OCR Error:", err);
+    return res.status(500).json({ error: "OCR failed", details: err.message });
   }
 }
