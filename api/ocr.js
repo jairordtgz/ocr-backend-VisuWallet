@@ -26,30 +26,44 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Server misconfiguration" });
     }
 
+    // 🔥 1. CAMBIO CLAVE AQUÍ → DOCUMENT_TEXT_DETECTION
     const response = await axios.post(
       `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_CLOUD_VISION_API_KEY}`,
       {
         requests: [
           {
             image: { content: imageBase64 },
-            features: [{ type: "TEXT_DETECTION" }],
+            features: [
+              { type: "DOCUMENT_TEXT_DETECTION" }  //  <-- CAMBIADO AQUÍ
+            ],
           },
         ],
       }
     );
 
-    const text = response.data.responses[0]?.fullTextAnnotation?.text || "";
+    const text =
+      response.data.responses[0]?.fullTextAnnotation?.text ||
+      response.data.responses[0]?.textAnnotations?.[0]?.description ||
+      "";
 
+    // 💰 Extraer monto
     const amountMatch = text.match(/\$?\s*(\d+[.,]\d{2}|\d+)/);
-    const dateMatch = text.match(/(\d{2,4}[\/\-]\d{1,2}[\/\-]\d{1,4})/);
+
+    // 📅 Extraer fecha (mejorado)
+    const dateMatch = text.match(
+      /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\b/
+    );
 
     return res.status(200).json({
       rawText: text,
       amount: amountMatch ? amountMatch[1].replace(",", ".") : "",
-      date: dateMatch ? dateMatch[1] : new Date().toISOString(),
+      date: dateMatch ? dateMatch[1] : "",
     });
   } catch (err) {
-    console.error("OCR Error:", err);
-    return res.status(500).json({ error: "OCR failed", details: err.message });
+    console.error("OCR Error:", err.response?.data || err.message);
+    return res.status(500).json({
+      error: "OCR failed",
+      details: err.response?.data || err.message,
+    });
   }
 }
