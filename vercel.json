@@ -2,8 +2,8 @@
   "version": 2,
   "functions": {
     "api/ocr.js": {
-      "memory": 2048,
-      "maxDuration": 30
+      "memory": 1024,
+      "maxDuration": 10
     }
   }
 }
