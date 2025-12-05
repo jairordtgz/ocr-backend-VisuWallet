@@ -21,10 +21,10 @@ export default async function handler(req, res) {
       const prompt = `
         Analiza esta imagen de un recibo.
         Devuelve un JSON con:
-        - monto_total
+        - monto_total, solo el valor y separando los centavos con punto
         - 3 etiquetas que describan la imagen
-        - texto_extraido
-        Si ves USD, Total o similares, ese es el monto.
+        - una breve descripcion de la imagen (en maximo 10 palabras)
+        Si ves USD, Total o similares, ese es el monto_total.
       `;
 
       const apiKey = process.env.OPENAI_API_KEY;
