@@ -1,4 +1,12 @@
 // api/analyze-image/index.js
+import { v2 as cloudinary } from "cloudinary";
+
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export default async function handler(req, res) {
   // GET → Mostrar mensaje de bienvenida
@@ -18,6 +26,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing imageBase64" });
       }
 
+      // Subir imagen a Cloudinary
+      const uploadResult = await cloudinary.uploader.upload(
+        `data:image/jpeg;base64,${imageBase64}`,
+        { folder: "visu_wallet_receipts" }
+      );
+      const imageUrl = uploadResult.secure_url;
+
       const prompt = `
          Analiza esta imagen de un recibo.
          Devuelve un JSON con:
@@ -25,10 +40,9 @@ export default async function handler(req, res) {
          - 3 etiquetas que describan la imagen
          - una breve descripcion de la imagen (en maximo 10 palabras)
          Si ves USD, Total o similares, ese es el monto_total.
-                                                                                                                          `;
+      `;
 
       const apiKey = process.env.OPENAI_API_KEY;
-
       if (!apiKey) {
         return res.status(500).json({ error: "Missing API KEY" });
       }
@@ -48,7 +62,7 @@ export default async function handler(req, res) {
               content: [
                 {
                   type: "input_image",
-                  image_base64: imageBase64,
+                  image_url: imageUrl, // ahora enviamos URL
                 },
               ],
             },

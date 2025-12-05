@@ -1,5 +1,8 @@
 {
   "name": "ocr-backend",
   "version": "1.0.0",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "cloudinary": "^2.8.0"
+  }
 }
