@@ -1,3 +1,5 @@
+/*
+
 // api/analyze-image/index.js
 import { v2 as cloudinary } from "cloudinary";
 
@@ -81,3 +83,81 @@ export default async function handler(req, res) {
   // Cualquier otro método
   return res.status(405).json({ error: "Method not allowed" });
 }
+
+*/
+
+// api/analyze-image/index.js
+export default async function handler(req, res) {
+  if (req.method === "GET") {
+    return res.status(200).json({
+      message:
+        "📡 API funcionando: envía un POST con { imageBase64 } a /api/analyze-image",
+    });
+  }
+
+  if (req.method === "POST") {
+    try {
+      const { imageBase64 } = req.body;
+
+      if (!imageBase64) {
+        return res.status(400).json({ error: "Missing imageBase64" });
+      }
+
+      const HF_API_KEY = process.env.HF_API_KEY;
+      if (!HF_API_KEY) {
+        return res.status(500).json({ error: "Missing Hugging Face API Key" });
+      }
+
+      // Convertir base64 a buffer
+      const imageBuffer = Buffer.from(imageBase64, "base64");
+
+      // Enviar a Hugging Face BLIP-2
+      const response = await fetch(
+        "https://api-inference.huggingface.co/models/Salesforce/blip2-flan-t5-xl",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${HF_API_KEY}`,
+            "Content-Type": "application/octet-stream",
+          },
+          body: imageBuffer,
+        }
+      );
+
+      if (!response.ok) {
+        const txt = await response.text();
+        console.error("HF response error:", response.status, txt);
+        throw new Error(`Hugging Face error: ${response.status}`);
+      }
+
+      const rawText = await response.text();
+      console.log("HF model output:", rawText);
+
+      // Extraer datos del recibo (simple parsing)
+      const montoMatch = rawText.match(/(\d+[.,]?\d{0,2})\s*(USD|\$)?/i);
+      const monto_total = montoMatch ? montoMatch[1].replace(",", ".") : null;
+
+      const etiquetas =
+        rawText
+          .toLowerCase()
+          .match(/\b(total|recibo|factura|pago|usd|compra|producto|servicio)\b/g) ||
+        [];
+
+      const descripcion = rawText.slice(0, 50); // breve descripción (primeras 50 letras)
+
+      const ocrDataForForm = {
+        amount: monto_total ? parseFloat(monto_total) : null,
+        labels: Array.isArray(etiquetas) ? etiquetas : [etiquetas],
+        rawText: descripcion,
+      };
+
+      return res.status(200).json(ocrDataForForm);
+    } catch (err) {
+      console.error("Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  return res.status(405).json({ error: "Method not allowed" });
+}
+
