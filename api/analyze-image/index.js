@@ -48,7 +48,7 @@ export default async function handler(req, res) {
               content: [
                 {
                   type: "input_image",
-                  image_url: imageBase64,
+                  image_base64: imageBase64,
                 },
               ],
             },
